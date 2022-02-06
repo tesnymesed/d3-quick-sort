@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+  <html>
+    <head>
+      <meta http-equiv = "Content-type" content = "text/html; charset = utf-8">
+      <title>Tri Rapide</title>
+    </head>
+    <body>
+    	<h1>
+    		Representation graphique
+    	</h1>
+
+      <section>
+        <h3>Tableau non trié !</h3>
+        <span style="margin: 10px;">Cliquez ici pour le trier</span>
+      </section>
+      <script type="text/javascript" src="d3.v3.js"></script>
+      <script type="text/javascript">
+
+
+        //Create SVG element
+        var w = 700;
+        var h = 450;
+        var svg = d3.select("body").append("svg").attr("width", w).attr("height", h).style("border", "3px #555 solid");
+
+        //var tab = [66,235,278,361,97,21,55,33,19,46,182,310,77,140,32,100];
+
+        //var tab = [180,226,50,12,14,55,149,85,106,269,97,11,260, 300, 275];
+
+        var tab = [50,80,60,70,10,40,90];
+
+        //var tab = [66,38,18,20,13,49,28,15,8,39,45];
+
+        var xScale = d3.scale.linear().domain([0, tab.length]).range([0, w-150]);
+        
+        var yScale = d3.scale.linear().domain([0, d3.max(tab, el => + el)]).range([0, h - 40]);
+
+        var pivots = [];
+
+        var attente = 1;
+
+        var vitesse = 1;
+
+        function histogramme(ip, i, j)
+        {
+
+          svg.selectAll("rect").data(tab).transition().delay(attente*vitesse*1000).attr("fill", function(d, elt) 
+          {
+              if (pivots.includes(elt)) return "green";
+                else if (elt == ip) return "orange";
+                  else if (elt == i) return "#24a";
+                    else if (elt == j) return "#f13";
+              return ("#666");
+          });
+
+          attente++;
+        }
+
+        function avantTri()
+        {
+
+          // Les barres
+          svg.selectAll("rect").data(tab).enter().append("rect").attr("x", function(d,i){return (xScale(i));})
+          .attr("width", xScale(1) - 1).attr("y", function(d,i){return h - yScale(d) - 15;})
+          .attr("height", function(d,i){return yScale(d);}).attr("fill", "#666");
+
+          // les indices
+          svg.selectAll("text").data(tab).enter().append("text").text(function(d,i) {return i;})
+            .attr("x", function(d, i) {return xScale(i+0.15);}).attr("y", function(d) {return h - 1; })
+            .attr("fill", "#111");
+
+          // les valeurs
+          svg.append("g").selectAll("text").data(tab).enter().append("text").text(function(d,i) {return d;})
+            .attr("x", function(d, i) {return xScale(i+0.15);}).attr("y", function(d) {return h - yScale(d) - 20; })
+            .attr("fill", "#111");
+
+
+          // Légende
+          var marge = 10;
+
+          svg.append("line").attr("x1",w-150+marge/2).attr("y1",0).attr("x2",w-150+marge/2).attr("y2",h)
+          .attr("stroke", "#444").attr("stroke-width", marge);
+
+          svg.append("text").text("Légende").attr("x", w-150+2*marge+12).attr("y",h*1/6).attr("font-size","30px");
+          svg.append("line").attr("x1",w-150+marge+20).attr("y1",h*1/6+3).attr("x2",w-150+marge+128).attr("y2",h*1/6+3)
+          .attr("stroke", "#333").attr("stroke-width", marge/5);
+
+          svg.append("circle").attr("cx",w-150+2*marge+3).attr("cy",h*2/6).attr("r", 10).attr("fill","orange");
+          svg.append("text").text("Pivot actuel").attr("x", w-150+2*marge+25).attr("y",h*2/6);
+
+          svg.append("circle").attr("cx",w-150+2*marge+3).attr("cy",h*3/6).attr("r", 10).attr("fill","#24a");
+          svg.append("text").text("Element inférieur").attr("x", w-150+2*marge+19).attr("y",h*3/6).attr("font-size","15px");
+
+          svg.append("circle").attr("cx",w-150+2*marge+3).attr("cy",h*4/6).attr("r", 10).attr("fill","#f13");
+          svg.append("text").text("Element superieur").attr("x", w-150+2*marge+19).attr("y",h*4/6).attr("font-size","15px");
+
+          svg.append("circle").attr("cx",w-150+2*marge+3).attr("cy",h*5/6).attr("r", 10).attr("fill","green");
+          svg.append("text").text("Pivot positionné").attr("x", w-150+2*marge+19).attr("y",h*5/6);  
+        }
+
+        function tri(i, j)
+        {
+          var deb, fin, ip, temp, supp = 0;
+          deb = i;
+          fin = j;
+
+          ip=parseInt((j+i)/2); // l'indice du milieu du Tableau
+          if( fin - deb >= 0) // Si le Tableau contient au moins 1 élément 
+          {
+            histogramme(ip,i,j);
+            while(i<j)
+            {
+              while(tab[i] < tab[ip])
+              { 
+                i++;
+                histogramme(ip,i,j);
+              }
+              while(tab[j] > tab[ip])
+              { 
+                j--;
+                histogramme(ip,i,j);
+              }
+
+              if (i != j)
+              {  
+                temp=tab[i];
+                tab[i]=tab[j];
+                tab[j]=temp;
+
+                if (ip == i || ip == j)
+                {
+                  if (ip == i) ip = j;
+                  else ip = i;
+                  histogramme(ip,i,j);
+                } 
+
+                svg.selectAll("rect").data(tab).transition().delay(attente*vitesse*1000)
+                .attr("y", function(d,i){return h - yScale(d)-15;}).attr("height", function(d,i){return yScale(d);});
+
+                svg.select("g").selectAll("text").data(tab).transition().delay(attente*vitesse*1000)
+                .text(function(d){return d;}).attr("y", function(d) {return h - yScale(d) - 20; });
+                attente++;
+               
+                if (i < ip) i++; 
+                if (j > ip) j--;
+
+                histogramme(ip,i,j); 
+              }    
+            }
+            pivots.push(ip);
+            
+            tri(deb,i-1); // Il trie une moitie du Tableau
+            tri(i+1,fin);  // Il trie l'autre moitie du Tableau
+          }  
+        }
+
+        d3.select("span").on("click", function()
+        {
+            d3.select("body").selectAll("span").data([]).exit().remove();
+            d3.select("h3").text("Tableau trié par ordre croissant");
+            tri(0,tab.length - 1);
+            histogramme(attente,0,0,0);
+        });
+
+        d3.select("span").on("mouseover", function()
+        {
+            d3.select("span").style("font-weight","bold");
+        });
+
+        d3.select("span").on("mouseout", function()
+        {
+            d3.select("span").style("font-weight","normal");
+        });
+
+
+        avantTri();
+
+
+
+      </script>
+    </body>
+  </html>
